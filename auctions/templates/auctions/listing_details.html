@@ -1,0 +1,117 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <div class="card-details mb-3">
+        {% if success_message %}
+            <div class="custom-message success">
+                {{ success_message }}
+            </div>
+        {% endif %}
+        <div class="row g-0">
+            <div class="col-md-4 align-self-center">
+                {% if listing.image_url %}
+                    <img src="{{ listing.image_url }}" alt="{{ listing.title }}" class="img-fluid rounded-start listing-image">
+                {% else %}
+                    <img src="/static/auctions/default_image.jpg" class="card-img" alt="Default image">
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                {% if user == listing.created_by %}
+                    {% for message in messages %}
+                        {% if message.tags == 'warning' %}
+                            <div class="custom-message warning">
+                                {{ message }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0"><strong>{{ listing.title }}</strong></h2>
+                        {% if user.is_authenticated %}
+                            <form action="{% url 'listing_details' listing.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" name="watchlist" class="btn btn-watchlist btn-sm">
+                                    {% if is_watchlisted %}Remove from Watchlist{% else %}Add to Watchlist{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    <p class="card-text">Description: <span class="text-secondary">{{ listing.description }}</span></p>
+                    <p class="card-text">Category: <span class="text-secondary">{{ listing.get_category_display }}</span></p>
+                    <p class="card-text">Price: <span class="text-secondary">{{ listing.current_price }}</span></p>
+                    <p class="card-text">Starting Bid: <span class="text-secondary">{{ listing.starting_bid }}</span></p>
+                    <p class="card-text">Created By: <span class="text-secondary">{{ listing.created_by.username }}</span></p>
+                    <p class="card-text">Created At: <span class="text-secondary">{{ listing.created_at }}</span></p>
+                    <p class="card-text">Number of Bids: <span class="text-secondary">{{ number_of_bids }}</span></p>
+                </div>
+                <div class="card-body">
+                    {% if listing.active %}
+                        {% if user.is_authenticated %}
+                            {% if user != listing.created_by %}
+                                <form action="{% url 'listing_details' listing.id %}" method="post">
+                                    {% csrf_token %}
+                                    {{ form.as_p }}
+                                    <button type="submit" class="btn btn-custom btn-block">Bid</button>
+                                </form>
+                                {% if error_message %}
+                                    <div class="custom-message warning">
+                                        {{ error_message }}
+                                    </div>
+                                {% endif %}
+                                {% if success_message_bid %}
+                                        <div class="custom-message success">
+                                            {{ success_message_bid }}
+                                        </div>
+                                    {% endif %}
+                            {% endif %}
+                            {% if user == listing.created_by and listing.active %}
+                                <form action="{% url 'close_auction' listing.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-custom btn-block btn-close">Close Auction</button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <p><a href="{% url 'login' %}" class="btn btn-custom">Log in to place a bid</a></p>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-danger">This auction has been closed.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    <br>
+    <h5 class="title-comments">Comments</h5>
+    <div class="card-details-comments mb-3">
+        <div class="row g-0">
+            <div class="col-md-4 align-self-center">
+                {% if user.is_authenticated %}
+                    <form action="{% url 'listing_details' listing.id %}" method="post">
+                        {% csrf_token %}
+                        {{ comment_form.as_p }}
+                        <input type="hidden" name="comment" value="true">
+                        <button type="submit" class="btn btn-custom btn-block">Add Comment</button>
+                    </form>
+                {% else %}
+                    <p><a href="{% url 'login' %}" class="btn btn-custom">Log in to add a comment</a></p>
+                {% endif %}
+            </div>
+            <div class="col-md-8">
+                <div class="container-comments">
+                    <div class="comments-section-card" style="max-height: 300px; overflow-y: auto;">
+                        {% for comment in comments %}
+                            <div class="comments-section">
+                                <p><strong>{{ comment.user.username }}</strong><span class="text-secondary-time">{{ comment.created_at }}</span></p>
+                                <p class="text-secondary-comment">{{ comment.content }}</p>
+                            </div>
+                        {% empty %}
+                            <p class="text-secondary">No comments yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
